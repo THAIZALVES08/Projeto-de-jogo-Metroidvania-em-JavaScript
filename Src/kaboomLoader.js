@@ -17,8 +17,8 @@ k.loadSprite("player", "./assets/sprites/u.png", {
   anims: {
     idle: { from: 0, to: 7, loop: true },
     run: { from: 8, to: 13, loop: true },
-    jump: 51,
-    fall: 54,
+    jump: { from: 51, to: 51, loop: true },
+    fall: { from: 54, to: 54, loop: true },
     explode: { from: 64, to: 69 },
     attack: { from: 24, to: 28, speed: 16 },
   },
