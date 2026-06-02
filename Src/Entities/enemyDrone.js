@@ -1,114 +1,117 @@
-export function makeDrone(k, initialPos){
-    return k.make([
-        k.pos(intialPos),k.sprite("drone", {anim: "flying"}),
-        k.area({shape: new k.Rect(k.vec2(0), 12, 12)}), //Cria uma área de colisão, formato: retangulo, tamanho: 12x12.
-        k.anchor("center"), //Define o ponto de referência do objeto no centro.
-        k.body({gravityScale: 0}), //Adiciona física/corpo ao objeto. Gravidade não afeta o drone pois ele pode voar.
-        k.offScreen({distance: 400}), //Define comportamento fora da tela.
-        k.state("patrol-right",[ //Cria uma máquina de estados, estado incial: patro-right.
-        "patrol-right",
-    "patrol-left",
-    "alert",
-    "attack",               //Estados possiveis.
-    "retreat",]),
-    k.health(1), // Adiciona vida ao drone (Ele tem apenas 1 vida).
+export function makeDrone(k, initialPos) {
+  return k.make([
+    k.pos(initialPos),
+    k.sprite("drone", { anim: "flying" }),
+    k.area({ shape: new k.Rect(k.vec2(0), 12, 12) }),
+    k.anchor("center"),
+    k.body({ gravityScale: 0 }),
+    k.offscreen({ distance: 400 }),
+    k.state("patrol-right", [
+      "patrol-right",
+      "patrol-left",
+      "alert",
+      "attack",
+      "retreat",
+    ]),
+    k.health(1),
     "drone",
     {
-        speed: 100, // Velocidade do drone durante patrulha.
-        pursuitSpeed: 150, // Velocidade em perseguição.
-        range: 100, // Distancia que detecta o jogador.
-        setBehavior(){ //Cria um método/função chamada setBehavior
-            const player = k.get("player", {recursive: true})[0]; //Procura o objeto com tag "player". Procura dentro de subobjetos. "[0]"Pega o primeiro "player" que encnotrar.
+      speed: 100,
+      pursuitSpeed: 150,
+      range: 100,
+      setBehavior() {
+        const player = k.get("player", { recursive: true })[0];
 
-            this.onStateEnter("patrol-right", async()=>{ //Executa código quando o drone entra no estado:"patrol-right"
-                await k.wait(3); // Espera 3 segundos.
-                if(this.state === "patrol-right") this.enterState("patrol-left"); //Verifica se ele ainda está nesse estado.
-                // Isso evita bugs caso ele tenha mudado para ataque antes dos 3 segundos.
-            });
+        this.onStateEnter("patrol-right", async () => {
+          await k.wait(3);
+          if (this.state === "patrol-right") this.enterState("patrol-left");
+        });
 
-            this.onStateUpdate("patrol-right", ()=> { //Executa continuamente enquanto o drone estiver em "patrol-right"
-                if(this.pos.dist(player.pos) < this.range){ //Calcula a distância entre: posição do drone, posição do jogador 
-                    this.enterState("alert"); //Muda para estado de alerta.
-                    return;
-                }
+        this.onStateUpdate("patrol-right", () => {
+          if (this.pos.dist(player.pos) < this.range) {
+            this.enterState("alert");
+            return;
+          }
+          this.flipX = false;
+          this.move(this.speed, 0);
+        });
 
-                this.flipX = false; // Faz drone olhar para jogador
-                this.move(this.speed, 0);  // Move em direção ao jogador
-            });
+        this.onStateEnter("patrol-left", async () => {
+          await k.wait(3);
+          if (this.state === "patrol-left") this.enterState("patrol-right");
+        });
 
-            this.onStateEnter("patrol-left", async () => { // Quando o drone entrar no estado "patrol-left"
-                await k.wait(3); // Espera 3 segundos
-                if (this.state === "patrol-left") this.enterState("patrol-right");  // Verifica se o drone ainda está nesse estado e troca para "patrol-right"
-                });
-                this.onStateUpdate("patrol-left", () => { // Atualiza continuamente enquanto estiver em "patrol-left"
-                if (this.pos.dist(player.pos) < this.range) {  // Verifica se o jogador está dentro do alcance
-                this.enterState("alert");    // Entra no estado de alerta
-                return;
-                }
-                this.flipx = true;   // Faz o sprite olhar para esquerda
-                this.move(-this.speed, 0);  // Move o drone para esquerda
-            });
+        this.onStateUpdate("patrol-left", () => {
+          if (this.pos.dist(player.pos) < this.range) {
+            this.enterState("alert");
+            return;
+          }
+          this.flipX = true;
+          this.move(-this.speed, 0);
+        });
 
-            this.onStateEnter("alert", async ()=> { // Quando drone entrar no estado "alert"
-                await k.wait(1);   // Espera 1 segundo
-                if(this.pos.dist(player.pos)< this.range){ //Verifica se a distância entre o drone e o jogador é menor que o valor de alcance
-                    this.enterState("attack"); // entra no estado de ataque.
-                    return;
-                }
+        this.onStateEnter("alert", async () => {
+          await k.wait(1);
+          if (this.pos.dist(player.pos) < this.range) {
+            this.enterState("attack");
+            return;
+          }
 
-                this.enterState("patrol-right") // Volta para o estado de patrulha para direita
-            });
+          this.enterState("patrol-right");
+        });
 
-            this.onStateUpdate("attack", () => { // Atualiza continuamente enquanto estiver no estado "attack"
-                if(this.pos.dist(player.pos) > this.range) {  // Verifica se o jogador saiu do alcance do drone
-                    this.enterState("alert") // Volta para o estado de alerta
-                    return;
-                }
+        this.onStateUpdate("attack", () => {
+          if (this.pos.dist(player.pos) > this.range) {
+            this.enterState("alert");
+            return;
+          }
 
-                this.flipX = player.pos.x <= this.pos.x;     // Faz o drone olhar para o lado do jogador
-                this.moveTo(k,vec2(player.pos.x, player.pos.y + 12),   // Move o drone em direção ao jogador
-                this.pursuitSpeed         // Velocidade de perseguição
-            );
-            });
-        },
+          this.flipX = player.pos.x <= this.pos.x;
+          this.moveTo(
+            k.vec2(player.pos.x, player.pos.y + 12),
+            this.pursuitSpeed
+          );
+        });
+      },
 
-        setEvents(){
-            const player = k.get("player", {recursive: true})[0];    // Procura o objeto com tag "player"
-                                                                    // [0] pega o primeiro player encontrado
+      setEvents() {
+        const player = k.get("player", { recursive: true })[0];
 
-            this.onCollide("player", ()=>{   // Evento executado quando o drone colidir com o player
-                if(player.isAttacking) return;   // Se o player estiver atacando, cancela o restante da função
-                this.hurt(1);         // Drone perde 1 de vida
-                player.hurt(1);      // Player perde 1 de vida
-            });
+        this.onCollide("player", () => {
+          if (player.isAttacking) return;
+          this.hurt(1);
+          player.hurt(1);
+        });
 
-            this.onAnimEnd((anim)=>{    // Evento executado quando uma animação terminar
-                if(anim === "explode") {  // Verifica se a animação terminada foi "explode"
-                    k.destroy(this);    // Remove o drone do jogo
-                }
-            });
+        this.onAnimEnd((anim) => {
+          if (anim === "explode") {
+            k.destroy(this);
+          }
+        });
 
-            this.on("explode", ()=>{ // Cria um evento chamado "explode"
-                k.play("boom"); // Toca o som da explosão
-                this.collisionIgnore = ["player"];    // Faz o drone ignorar colisão com o player
-                this.unuse("body"); // Remove o componente de física/corpo do drone
-                this.play("explode");   // Toca a animação de explosão
-            });
+        this.on("explode", () => {
+          k.play("boom");
+          this.collisionIgnore = ["player"];
+          this.unuse("body");
+          this.play("explode");
+        });
 
-            this.onCollide("sword-hitbox", () => { // Evento executado quando a espada atingir o drone
-                this.hurt(1);     // Drone perde 1 de vida
-            });
+        this.onCollide("sword-hitbox", () => {
+          this.hurt(1);
+        });
 
-            this.on("hurt", () => { // Evento executado quando o drone receber dano
-                if(this.hp() === 0) {  // Verifica se a vida do drone chegou a 0
-                    this.trigger("explode")  // Ativa o evento de explosão
-                }
-            });
+        // event defined by default by the health component
+        // when health is removed
+        this.on("hurt", () => {
+          if (this.hp() === 0) {
+            this.trigger("explode");
+          }
+        });
 
-            this.onExitScreen(() => { // Evento executado quando o drone sair da tela
-             this.pos = initialPos;    // Volta o drone para a posição inicial
-            });
-        },
+        this.onExitScreen(() => {
+          if (this.pos.dist(initialPos) > 400) this.pos = initialPos;
+        });
+      },
     },
-    ]);
+  ]);
 }
