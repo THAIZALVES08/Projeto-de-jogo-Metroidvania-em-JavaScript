@@ -118,12 +118,12 @@ export function makePlayer(k) {
       },
 
       setEvents() {
-        // when player falls after jumping
+        
         this.onFall(() => {
           this.play("fall");
         });
 
-        // when player falls off a platform
+        
         this.onFallOff(() => {
           this.play("fall");
         });
